@@ -21,13 +21,12 @@ $(document).ready(function(){
                 },{
                     method:"get"
                 })
-                
+
             },{},{
                 method:'get'
             });
         });
     });
-   
 
     $('#weibo_text').on("keyup change click",function(){
         var wordLength = getStrLen($('#extra_content').val() + $(this).val());
@@ -56,7 +55,13 @@ $(document).ready(function(){
         $('#info').text("已经输入" + wordLength + "字");
     });
 
+    var dragStart = function() {
+       $('.delete_box').show();
+    }
 
+    var dragEnd = function() {
+       $('.delete_box').hide();
+    }
 
     $('#send_to_btn').click(function(){
         var weiboId = $('#weibo_id').val();
@@ -99,6 +104,7 @@ $(document).ready(function(){
             localStorage['fans'] = fansJSONStr;
             localStorage['uid']  = uid;
             $('.send').removeAttr("disabled");
+            $('#fans_list').sortable({ start:dragStart,stop:dragEnd });
             return;
         }
         WB2.anyWhere(function(W){
@@ -124,6 +130,8 @@ $(document).ready(function(){
             });
         });
     }
+
+
 
     $('#get_fans_btn').click(function(){
         var uid = $('#uid_text').val();
@@ -174,6 +182,8 @@ $(document).ready(function(){
                 perNode.data("value",users[i].screen_name);
                 perNode.appendTo(fansList);
             }
+            $('.send').removeAttr("disabled");
+            $('#fans_list').sortable({start:dragStart,stop:dragEnd });
         }
 
         var savedUID = localStorage['uid'];
@@ -182,8 +192,6 @@ $(document).ready(function(){
         }  else {
             getFansFromRemote();
         }
-
-
         return false;
     });
 
@@ -212,9 +220,9 @@ $(document).ready(function(){
 
         autoSendInterval = setInterval(function(){
             $('#weibo_text').val('');
-            var length = $('.fans').length;
+            var length = $('#fans_list > .fans').length;
             for(var i = 0 ; i < 3 && fansIndex < length; i++, fansIndex++) {
-                 $('.fans').eq(fansIndex).click();
+                 $('#fans_list > .fans').eq(fansIndex).click();
             }         
             if( fansIndex == length ) {
                 clearInterval(autoSendInterval);
@@ -237,6 +245,17 @@ $(document).ready(function(){
         return false;
     });
 
+    var deleteItem = function( $item ) {
+        $item.remove();
+    }
+
+    $('#delete_box').droppable({
+        accept:"div.fans",
+        drop: function( event, ui ) {
+            deleteItem(ui.draggable);
+        }
+    });
+
     $('#stop_send_btn').click(function(){
         clearInterval(autoSendInterval);
         clearInterval(timerInterval);
@@ -248,5 +267,4 @@ $(document).ready(function(){
         $('#info').text("已停止发送");
         return false;
     });
-
 });

@@ -1,3 +1,7 @@
 #IntelliJ IDEA Files
 
 .iml
+.exe
+.nw
+.idea
+.idea/*
