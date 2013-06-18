@@ -1,0 +1,252 @@
+$(document).ready(function(){
+    var maxstrlen = 140;
+    var fansListData = [];
+    var localStorage = window.localStorage;
+
+    WB2.login(function(){
+        $('.hidden').show();
+        WB2.anyWhere(function(W){
+            W.parseCMD("/account/get_uid.json",function(sResult,bStatus){
+                if( !bStatus ) return;
+                var uid = sResult['uid'];
+                W.parseCMD("/users/show.json",function(sResult,bStatus){
+                    var screenName = sResult['screen_name'];
+                    $('.username').show();
+                    $('#username').text(screenName);
+                    $('#uid_text').val(screenName);
+                    var url = "http://weibo.com/" + sResult['profile_url'];
+                    $('#username').attr("href",url);
+                },{
+                    uid: uid
+                },{
+                    method:"get"
+                })
+                
+            },{},{
+                method:'get'
+            });
+        });
+    });
+   
+
+    $('#weibo_text').on("keyup change click",function(){
+        var wordLength = getStrLen($('#extra_content').val() + $(this).val());
+        $('#info').text("已经输入" + wordLength + "字");
+    });
+
+    $('#extra_content').on("keyup change click",function(){
+        var wordLength = getStrLen($('#extra_content').val() + $("#weibo_text").val());
+        $('#info').text("已经输入" + wordLength + "字");
+    });
+
+    var getStrLen = function (str) {
+        var myLen = 0;
+        for (var i = 0; (i < str.length) && (myLen <= maxstrlen * 2); i++) {
+            myLen++;
+        }
+        return myLen;
+    }
+
+    $('#fans_list').on('click','.fans',function() {
+        var appendTo = $(this).data("value");
+        var text = $('#weibo_text').val();
+        text += "@"+ appendTo + " ";
+        $('#weibo_text').val(text);
+        var wordLength = getStrLen($('#extra_content').val() + text);
+        $('#info').text("已经输入" + wordLength + "字");
+    });
+
+
+
+    $('#send_to_btn').click(function(){
+        var weiboId = $('#weibo_id').val();
+        if( weiboId == '' ) {
+            alert("微博ID为空");
+            return false;
+        }
+
+        var text = $('#extra_content').val() + $('#weibo_text').val();
+        var length = getStrLen(text);
+        if( length > maxstrlen ) {
+            $('#info').text("字数太长啦！");
+            return false;
+        }
+
+        $('#info').text("发送中");
+        text = encodeURI(text);
+        
+        WB2.anyWhere(function(W){
+            W.parseCMD("/comments/create.json", function(sResult,bStatus) {
+                if(bStatus) {
+                    $('#info').text("发送成功");
+                } else {
+                    $('#info').text("发送失败");
+                }
+            },{
+                id: weiboId,
+                comment: text 
+            },{
+                method: "post"
+            });
+        });
+        return false;
+    })
+
+    var getMoreFans = function(uid,cursor,total,ulNode) {
+        if( cursor == 0 ) {
+            $('#info').text("加载完成，粉丝数:"+total);
+            var fansJSONStr = JSON.stringify(fansListData);
+            localStorage['fans'] = fansJSONStr;
+            localStorage['uid']  = uid;
+            $('.send').removeAttr("disabled");
+            return;
+        }
+        WB2.anyWhere(function(W){
+            W.parseCMD("/friendships/followers.json", function(sResult, bStatus){
+                if( !bStatus ) return;
+                var listNode = $('<div class="fans"></div>');
+                    var userLength = sResult.users.length;
+                    var users = sResult.users;
+                    fansListData = fansListData.concat(users);
+                    for(var i = 0; i < userLength; i++ ) {
+                        var perNode = listNode.clone();
+                        perNode.text(users[i].screen_name);
+                        perNode.data("value",users[i].screen_name);
+                        perNode.appendTo(ulNode);
+                }
+                getMoreFans(uid,sResult['next_cursor'],sResult["total_number"],ulNode);
+            },{
+                screen_name: uid,
+                count: 200,
+                cursor: cursor
+            },{
+                method: 'get'
+            });
+        });
+    }
+
+    $('#get_fans_btn').click(function(){
+        var uid = $('#uid_text').val();
+        if( uid == '' ) {
+            alert("UID为空");
+            return false;
+        }
+
+        var getFansFromRemote = function(){
+            $('#info').text("获取中");
+            WB2.anyWhere(function(W){
+                W.parseCMD("/friendships/followers.json", function(sResult, bStatus){
+                    if( !bStatus ) return;
+                    fansListData = [];
+                    var fansList = $('#fans_list').html('');
+                    var listNode = $('<div class="fans"></div>');
+                    var userLength = sResult.users.length;
+
+                    var users = sResult.users;
+                    fansListData = fansListData.concat(users);
+                    for(var i = 0; i < userLength; i++ ) {
+                        var perNode = listNode.clone();
+                        perNode.text(users[i].screen_name);
+                        perNode.data("value",users[i].screen_name);
+                        perNode.appendTo(fansList);
+                    }
+                    getMoreFans(uid,sResult['next_cursor'],sResult["total_number"],fansList);
+                },{
+                    screen_name: uid,
+                    count: 200
+                },{
+                    method: 'get'
+                });
+            });
+        };
+
+        var getFansFromStorage = function() {
+            var fanListJSONStr = localStorage['fans'];
+            fansListData = JSON.parse(fanListJSONStr);
+            var fansList = $('#fans_list').html('');
+            var listNode = $('<div class="fans"></div>');
+            var userLength = fansListData.length;
+
+            var users = fansListData;
+            for(var i = 0; i < userLength; i++ ) {
+                var perNode = listNode.clone();
+                perNode.text(users[i].screen_name);
+                perNode.data("value",users[i].screen_name);
+                perNode.appendTo(fansList);
+            }
+        }
+
+        var savedUID = localStorage['uid'];
+        if( savedUID ) {
+            getFansFromStorage();
+        }  else {
+            getFansFromRemote();
+        }
+
+
+        return false;
+    });
+
+    
+    var autoSendInterval;
+    var timerInterval;
+
+    var TIME_INTERVAL = 60;
+
+    var timer = 0;
+    var fansIndex = 0;
+
+    $('#auto_send_btn').click(function(){
+        clearInterval(autoSendInterval);
+        clearInterval(timerInterval);
+        fansIndex = 0;
+        TIME_INTERVAL = $('#time_interval').val();
+        TIME_INTERVAL = parseInt(TIME_INTERVAL);
+        if( TIME_INTERVAL < 30 || TIME_INTERVAL == NaN ) {
+            TIME_INTERVAL = 30;
+        }
+        timer = TIME_INTERVAL;
+
+        $(this).attr("disabled","disabled");
+        $('#stop_send_btn').removeAttr("disabled");
+
+        autoSendInterval = setInterval(function(){
+            $('#weibo_text').val('');
+            var length = $('.fans').length;
+            for(var i = 0 ; i < 3 && fansIndex < length; i++, fansIndex++) {
+                 $('.fans').eq(fansIndex).click();
+            }         
+            if( fansIndex == length ) {
+                clearInterval(autoSendInterval);
+                clearInterval(timerInterval);
+                fansIndex = 0;
+                autoSendInterval = undefined;
+                timerInterval = undefined;
+                $('#info').text("全部发送完成");
+            }  
+            $('#send_to_btn').click();
+            timer = TIME_INTERVAL;
+        },TIME_INTERVAL* 1000);
+
+        timerInterval = setInterval(function(){
+            $('#info').text("下一次发送时间大约还有："+timer--+"秒。");
+            if( timer < 0 ) {
+                timer = 0;
+            }
+        },1000);
+        return false;
+    });
+
+    $('#stop_send_btn').click(function(){
+        clearInterval(autoSendInterval);
+        clearInterval(timerInterval);
+        fansIndex = 0;
+        autoSendInterval = undefined; 
+        timerInterval = undefined;
+        $(this).attr("disabled","disabled");
+        $('#auto_send_btn').removeAttr("disabled");
+        $('#info').text("已停止发送");
+        return false;
+    });
+
+});

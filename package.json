@@ -1,0 +1,16 @@
+{
+    "name": "一起咖啡",
+    "main": "index.html",
+    "single-instance": true,
+    "description": "Weibo Tools",
+    "version": "0.1.0",
+    "window": {
+        "title": "LetsCoffee",
+        "toolbar": true,
+        "frame": true,
+        "position": "center",
+        "resizable": false,
+        "width": 800,
+        "height": 630
+    }
+}
