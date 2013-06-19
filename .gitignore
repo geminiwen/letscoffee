@@ -1,8 +1,9 @@
 #IntelliJ IDEA Files
-
 .iml
 .exe
 .nw
 .idea
 .idea/*
+
+#nodejs files
 node_modules/
