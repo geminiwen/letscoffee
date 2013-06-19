@@ -1,7 +1,7 @@
 #IntelliJ IDEA Files
-.iml
-.exe
-.nw
+*.iml
+*.exe
+*.nw
 .idea
 .idea/*
 
