@@ -1,5 +1,5 @@
 {
-    "name": "一起咖啡",
+    "name": "LetsCoffee",
     "main": "index.html",
     "single-instance": true,
     "description": "Weibo Tools",
@@ -12,5 +12,8 @@
         "resizable": false,
         "width": 800,
         "height": 630
+    },
+    "dependencies": {
+        "fs-extra": "~0.6.1"
     }
 }

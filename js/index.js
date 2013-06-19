@@ -56,11 +56,11 @@ $(document).ready(function(){
     });
 
     var dragStart = function() {
-       $('.delete_box').show();
+       $('.delete_box').fadeIn();
     }
 
     var dragEnd = function() {
-       $('.delete_box').hide();
+       $('.delete_box').fadeOut();
     }
 
     $('#send_to_btn').click(function(){
@@ -81,7 +81,7 @@ $(document).ready(function(){
         text = encodeURI(text);
         
         WB2.anyWhere(function(W){
-            W.parseCMD("/comments/create.json", function(sResult,bStatus) {
+            W.parseCMD("/statuses/repost.json", function(sResult,bStatus) {
                 if(bStatus) {
                     $('#info').text("发送成功");
                 } else {
@@ -89,7 +89,8 @@ $(document).ready(function(){
                 }
             },{
                 id: weiboId,
-                comment: text 
+                status: text,
+                is_comment: 1
             },{
                 method: "post"
             });
@@ -104,7 +105,6 @@ $(document).ready(function(){
             localStorage['fans'] = fansJSONStr;
             localStorage['uid']  = uid;
             $('.send').removeAttr("disabled");
-            $('#fans_list').sortable({ start:dragStart,stop:dragEnd });
             return;
         }
         WB2.anyWhere(function(W){
@@ -113,11 +113,12 @@ $(document).ready(function(){
                 var listNode = $('<div class="fans"></div>');
                     var userLength = sResult.users.length;
                     var users = sResult.users;
-                    fansListData = fansListData.concat(users);
                     for(var i = 0; i < userLength; i++ ) {
                         var perNode = listNode.clone();
-                        perNode.text(users[i].screen_name);
-                        perNode.data("value",users[i].screen_name);
+                        var screenName = users[i].screen_name;
+                        perNode.text(screenName);
+                        fansListData.push(screenName);
+                        perNode.data("value",screenName);
                         perNode.appendTo(ulNode);
                 }
                 getMoreFans(uid,sResult['next_cursor'],sResult["total_number"],ulNode);
@@ -131,7 +132,21 @@ $(document).ready(function(){
         });
     }
 
+    var getFansFromStorage = function() {
+        var userLength = fansListData.length;
+        var fansList = $('#fans_list').html('');
+        var users = fansListData;
+        var listNode = $('<div class="fans"></div>');
+        for(var i = 0; i < userLength; i++ ) {
+            var perNode = listNode.clone();
+            var screenName = users[i];
+            perNode.text(screenName);
+            perNode.data("value",screenName);
+            perNode.appendTo(fansList);
+        }
+        $('.send').removeAttr("disabled");
 
+    };
 
     $('#get_fans_btn').click(function(){
         var uid = $('#uid_text').val();
@@ -151,11 +166,12 @@ $(document).ready(function(){
                     var userLength = sResult.users.length;
 
                     var users = sResult.users;
-                    fansListData = fansListData.concat(users);
                     for(var i = 0; i < userLength; i++ ) {
                         var perNode = listNode.clone();
-                        perNode.text(users[i].screen_name);
-                        perNode.data("value",users[i].screen_name);
+                        var screenName = users[i].screen_name;
+                        perNode.text(screenName);
+                        fansListData.push(screenName);
+                        perNode.data("value", screenName);
                         perNode.appendTo(fansList);
                     }
                     getMoreFans(uid,sResult['next_cursor'],sResult["total_number"],fansList);
@@ -167,31 +183,7 @@ $(document).ready(function(){
                 });
             });
         };
-
-        var getFansFromStorage = function() {
-            var fanListJSONStr = localStorage['fans'];
-            fansListData = JSON.parse(fanListJSONStr);
-            var fansList = $('#fans_list').html('');
-            var listNode = $('<div class="fans"></div>');
-            var userLength = fansListData.length;
-
-            var users = fansListData;
-            for(var i = 0; i < userLength; i++ ) {
-                var perNode = listNode.clone();
-                perNode.text(users[i].screen_name);
-                perNode.data("value",users[i].screen_name);
-                perNode.appendTo(fansList);
-            }
-            $('.send').removeAttr("disabled");
-            $('#fans_list').sortable({start:dragStart,stop:dragEnd });
-        }
-
-        var savedUID = localStorage['uid'];
-        if( savedUID ) {
-            getFansFromStorage();
-        }  else {
-            getFansFromRemote();
-        }
+        getFansFromRemote();
         return false;
     });
 
@@ -203,6 +195,43 @@ $(document).ready(function(){
 
     var timer = 0;
     var fansIndex = 0;
+
+    var autoSendProcess = function() {
+        var weiboId = $('#weibo_id').val();
+        if( weiboId == '' ) {
+            alert("微博ID为空");
+            $('#stop_send_btn').click();
+            return ;
+        }
+
+        var text = $('#extra_content').val() + $('#weibo_text').val();
+        var length = getStrLen(text);
+        if( length > maxstrlen ) {
+            $('#info').text("字数太长啦！");
+            $('#stop_send_btn').click();
+            return ;
+        }
+
+        $('#info').text("发送中");
+        text = encodeURI(text);
+
+        WB2.anyWhere(function(W){
+            W.parseCMD("/statuses/repost.json", function(sResult,bStatus) {
+                if(bStatus) {
+                    $('#info').text("发送成功");
+                } else {
+                    $('#info').text("发送失败");
+                    $('#stop_send_btn').click();
+                }
+            },{
+                id: weiboId,
+                status: text,
+                is_comment: 1
+            },{
+                method: "post"
+            });
+        });
+    }
 
     $('#auto_send_btn').click(function(){
         clearInterval(autoSendInterval);
@@ -231,8 +260,8 @@ $(document).ready(function(){
                 autoSendInterval = undefined;
                 timerInterval = undefined;
                 $('#info').text("全部发送完成");
-            }  
-            $('#send_to_btn').click();
+            }
+            autoSendProcess();
             timer = TIME_INTERVAL;
         },TIME_INTERVAL* 1000);
 
@@ -246,9 +275,11 @@ $(document).ready(function(){
     });
 
     var deleteItem = function( $item ) {
+        var data = $item.data("value");
+        fansListData = _.reject(fansListData,function(d) { return d == data; });
         $item.remove();
     }
-
+    $('#fans_list').sortable({start:dragStart,stop:dragEnd });
     $('#delete_box').droppable({
         accept:"div.fans",
         drop: function( event, ui ) {
@@ -267,4 +298,42 @@ $(document).ready(function(){
         $('#info').text("已停止发送");
         return false;
     });
+
+    $('#export_fans_btn').click(function(){
+        var elem = $('<input type="file" nwsaveas>');
+        var fs = require("fs-extra");
+        elem.click();
+        elem.on("change",function(e){
+            var path = e.currentTarget.files[0].path;
+            var fansListToFile = fansListData.join("\r\n");
+            fs.outputFile(path,fansListToFile,function(err){
+                if(err) {
+                    $('#info').text("导出失败：" + err);
+                } else {
+                    $('#info').text("导出成功");
+                }
+            });
+        });
+        return false;
+    });
+
+    $('#import_fans_btn').click(function(){
+        var elem = $('<input type="file" >');
+        var fs = require("fs-extra");
+        elem.click();
+        elem.on("change",function(e){
+            var path = e.currentTarget.files[0].path;
+            fs.readFile(path, 'utf8', function(err, data) {
+                if(err) {
+                    $('#info').text("导入错误");
+                } else {
+                    fansListData = data.split("\r\n");
+                    getFansFromStorage();
+                    $('#info').text("导入成功");
+                }
+
+            })
+        });
+        return false;
+    })
 });
