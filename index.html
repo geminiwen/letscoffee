@@ -9,7 +9,9 @@
     <body>
         <div class="main">
             <form class="pure-form" >
-                <div class="username" style="margin-bottom:10px;"><a href="#" id="username" class="pure-button-primary pure-button" target="_blank"></a></div>
+                <div class="username" style="margin-bottom:10px;">
+                    <a href="#" id="username" class="pure-button-primary pure-button" href="#" ></a>
+                </div>
                 <input id="uid_text" placeholder="微博名称" class="hidden" type="text">
                 <button id="get_fans_btn" class="hidden pure-button">获取粉丝</button>
                 <div class="content_container">
@@ -27,8 +29,11 @@
                         </fieldset>
 
                     </div>
-                    <div >
-                        <button class="send pure-button" id="send_to_btn" disabled>发送给ta</button>
+                    <div>
+                        <button class="send pure-button" id="send_to_btn">转发给ta</button>
+                        <button class="send pure-button" id="comment_to_btn">评论给ta</button>
+                    </div>
+                    <div>
                         <button class="pure-button pure-button-primary" id="export_fans_btn">导出粉丝</button>
                         <button class="pure-button pure-button-primary" id="import_fans_btn">导入粉丝</button>
                     </div>

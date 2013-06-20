@@ -15,17 +15,26 @@ $(document).ready(function(){
                     $('#username').text(screenName);
                     $('#uid_text').val(screenName);
                     var url = "http://weibo.com/" + sResult['profile_url'];
-                    $('#username').attr("href",url);
                 },{
                     uid: uid
                 },{
                     method:"get"
                 })
-
             },{},{
                 method:'get'
             });
         });
+    });
+
+    $('#username').click(function(){
+        // Load native UI library
+        var gui = require('nw.gui');
+
+        var win = gui.Window.get();
+        WB2.logout(function(){
+            win.reload();
+        });
+        return false;
     });
 
     $('#weibo_text').on("keyup change click",function(){
@@ -90,13 +99,47 @@ $(document).ready(function(){
             },{
                 id: weiboId,
                 status: text,
-                is_comment: 1
+                is_comment: 0
             },{
                 method: "post"
             });
         });
         return false;
-    })
+    });
+
+    $('#comment_to_btn').click(function(){
+        var weiboId = $('#weibo_id').val();
+        if( weiboId == '' ) {
+            alert("微博ID为空");
+            return false;
+        }
+
+        var text = $('#extra_content').val() + $('#weibo_text').val();
+        var length = getStrLen(text);
+        if( length > maxstrlen ) {
+            $('#info').text("字数太长啦！");
+            return false;
+        }
+
+        $('#info').text("发送中");
+        text = encodeURI(text);
+
+        WB2.anyWhere(function(W){
+            W.parseCMD("/comments/create.json", function(sResult,bStatus) {
+                if(bStatus) {
+                    $('#info').text("发送成功");
+                } else {
+                    $('#info').text("发送失败");
+                }
+            },{
+                id: weiboId,
+                comment: text
+            },{
+                method: "post"
+            });
+        });
+        return false;
+    });
 
     var getMoreFans = function(uid,cursor,total,ulNode) {
         if( cursor == 0 ) {
@@ -104,7 +147,6 @@ $(document).ready(function(){
             var fansJSONStr = JSON.stringify(fansListData);
             localStorage['fans'] = fansJSONStr;
             localStorage['uid']  = uid;
-            $('.send').removeAttr("disabled");
             return;
         }
         WB2.anyWhere(function(W){
@@ -226,7 +268,7 @@ $(document).ready(function(){
             },{
                 id: weiboId,
                 status: text,
-                is_comment: 1
+                is_comment: 0
             },{
                 method: "post"
             });
@@ -250,7 +292,7 @@ $(document).ready(function(){
         autoSendInterval = setInterval(function(){
             $('#weibo_text').val('');
             var length = $('#fans_list > .fans').length;
-            for(var i = 0 ; i < 3 && fansIndex < length; i++, fansIndex++) {
+            for(var i = 0 ; i < 5 && fansIndex < length; i++, fansIndex++) {
                  $('#fans_list > .fans').eq(fansIndex).click();
             }         
             if( fansIndex == length ) {
@@ -327,6 +369,7 @@ $(document).ready(function(){
                 if(err) {
                     $('#info').text("导入错误");
                 } else {
+                    data = data.replace(/^\uFEFF/, '');
                     fansListData = data.split("\r\n");
                     getFansFromStorage();
                     $('#info').text("导入成功");

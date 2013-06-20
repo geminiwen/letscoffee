@@ -3,15 +3,15 @@
     "main": "index.html",
     "single-instance": true,
     "description": "Weibo Tools",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "window": {
         "title": "LetsCoffee",
-        "toolbar": true,
+        "toolbar": false,
         "frame": true,
         "position": "center",
         "resizable": false,
         "width": 800,
-        "height": 630
+        "height": 670
     },
     "dependencies": {
         "fs-extra": "~0.6.1"
