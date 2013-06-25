@@ -19,7 +19,7 @@ $(document).ready(function(){
                     uid: uid
                 },{
                     method:"get"
-                })
+                });
             },{},{
                 method:'get'
             });
@@ -74,7 +74,7 @@ $(document).ready(function(){
 
     $('#send_to_btn').click(function(){
         var weiboId = $('#weibo_id').val();
-        if( weiboId == '' ) {
+        if( weiboId === '' ) {
             alert("微博ID为空");
             return false;
         }
@@ -88,7 +88,7 @@ $(document).ready(function(){
 
         $('#info').text("发送中");
         text = encodeURI(text);
-        
+
         WB2.anyWhere(function(W){
             W.parseCMD("/statuses/repost.json", function(sResult,bStatus) {
                 if(bStatus) {
@@ -109,7 +109,7 @@ $(document).ready(function(){
 
     $('#comment_to_btn').click(function(){
         var weiboId = $('#weibo_id').val();
-        if( weiboId == '' ) {
+        if( weiboId === '' ) {
             alert("微博ID为空");
             return false;
         }
@@ -142,11 +142,9 @@ $(document).ready(function(){
     });
 
     var getMoreFans = function(uid,cursor,total,ulNode) {
-        if( cursor == 0 ) {
+        if( cursor === 0 ) {
             $('#info').text("加载完成，粉丝数:"+total);
             var fansJSONStr = JSON.stringify(fansListData);
-            localStorage['fans'] = fansJSONStr;
-            localStorage['uid']  = uid;
             return;
         }
         WB2.anyWhere(function(W){
@@ -229,7 +227,7 @@ $(document).ready(function(){
         return false;
     });
 
-    
+
     var autoSendInterval;
     var timerInterval;
 
@@ -238,7 +236,7 @@ $(document).ready(function(){
     var timer = 0;
     var fansIndex = 0;
 
-    var autoSendProcess = function() {
+    var autoSendProcess = function(content) {
         var weiboId = $('#weibo_id').val();
         if( weiboId == '' ) {
             alert("微博ID为空");
@@ -246,7 +244,7 @@ $(document).ready(function(){
             return ;
         }
 
-        var text = $('#extra_content').val() + $('#weibo_text').val();
+        var text = content + $('#weibo_text').val();
         var length = getStrLen(text);
         if( length > maxstrlen ) {
             $('#info').text("字数太长啦！");
@@ -289,12 +287,13 @@ $(document).ready(function(){
         $(this).attr("disabled","disabled");
         $('#stop_send_btn').removeAttr("disabled");
 
+        var contentList = localStorage.getItem("content_list");
+        contentList = contentList || '[]';
+        contentList = JSON.parse(contentList);
+        var contentListLength = contentList.length;
         autoSendInterval = setInterval(function(){
             $('#weibo_text').val('');
             var length = $('#fans_list > .fans').length;
-            for(var i = 0 ; i < 5 && fansIndex < length; i++, fansIndex++) {
-                 $('#fans_list > .fans').eq(fansIndex).click();
-            }         
             if( fansIndex == length ) {
                 clearInterval(autoSendInterval);
                 clearInterval(timerInterval);
@@ -302,8 +301,25 @@ $(document).ready(function(){
                 autoSendInterval = undefined;
                 timerInterval = undefined;
                 $('#info').text("全部发送完成");
+                return ;
             }
-            autoSendProcess();
+            for(var i = 0 ; i < 5 && fansIndex < length; i++, fansIndex++) {
+
+                 $('#fans_list > .fans').eq(fansIndex).click();
+            }
+            if( contentListLength == 0 ) {
+                clearInterval(autoSendInterval);
+                clearInterval(timerInterval);
+                fansIndex = 0;
+                autoSendInterval = undefined;
+                timerInterval = undefined;
+                $('#info').text('没有任何内容可以发送');
+                return ;
+            }
+
+
+            var contentIndex = randomer(contentListLength);
+            autoSendProcess(contentList[contentIndex]);
             timer = TIME_INTERVAL;
         },TIME_INTERVAL* 1000);
 
@@ -333,7 +349,7 @@ $(document).ready(function(){
         clearInterval(autoSendInterval);
         clearInterval(timerInterval);
         fansIndex = 0;
-        autoSendInterval = undefined; 
+        autoSendInterval = undefined;
         timerInterval = undefined;
         $(this).attr("disabled","disabled");
         $('#auto_send_btn').removeAttr("disabled");
@@ -378,5 +394,80 @@ $(document).ready(function(){
             })
         });
         return false;
+    });
+
+
+    $('#content_list_add_btn').click(function(){
+        var value =  $('#extra_content').val();
+        if( !value || value === '' ) {
+            $('#info').text("添加失败，内容不够");
+            return false;
+        }
+        var option = $('<option></option>');
+        option.val(value);
+        option.text(value);
+        option.appendTo($('#extra_content_list'));
+
+        var list = localStorage.getItem("content_list");
+        list = list || '[]';
+        list = JSON.parse(list);
+        list.push(value);
+        list = JSON.stringify(list);
+        localStorage.setItem("content_list",list);
+        $('#info').text("添加成功");
+
+        return false;
+    });
+
+    $('#content_list_show_btn').click(function(){
+        $('.extra_content_list_box').fadeIn();
+        return false;
     })
+
+    $('#content_list_close_btn').click(function(){
+        $('.extra_content_list_box').fadeOut();
+        return false;
+    });
+
+    $('#content_list_delete_btn').click(function(){
+       var value =  $('#extra_content_list').val();
+       if( !value || value === '') {
+           alert('请选择一项');
+           return false;
+       }
+       $("option[value="+value+"]").remove();
+       var list = localStorage.getItem("content_list");
+       list = list || '[]';
+       list = JSON.parse(list);
+       list = _.reject(list,function(i) { return i === value });
+       list = JSON.stringify(list);
+       localStorage.setItem("content_list",list);
+
+        $('#info').text("删除成功");
+       return false;
+    });
+
+    $('#extra_content_list').on('dblclick',function(){
+        var value = $(this).val();
+        $('#extra_content').val(value);
+        $('.extra_content_list_box').fadeOut();
+        return false;
+    });
+
+    var list = localStorage.getItem("content_list");
+    list = list || '[]';
+    list = JSON.parse(list);
+    var option = $('<option></option>');
+    _.each(list,function(e,i){
+        var o = option.clone();
+        o.val(e);
+        o.text(e);
+        o.appendTo($('#extra_content_list'));
+    });
+
+
+    var randomer = function(length) {
+        return  Math.floor(Math.random() * length);
+    }
+
 });
