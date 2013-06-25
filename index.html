@@ -5,6 +5,13 @@
         <title>一起咖啡</title>
         <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.2.0/pure-min.css">
         <link rel="stylesheet" type="text/css" href="css/index.css">
+        <script>
+            window.addEventListener('keydown', function (e) {
+                if (e.keyIdentifier === 'F12') {
+                    require('nw.gui').Window.get().showDevTools();
+                }
+            });
+        </script>
     </head>
     <body>
         <div class="main">
@@ -22,6 +29,10 @@
                         <fieldset>
                             <legend style="font-size: 80%">附加内容</legend>
                             <textarea id="extra_content" style="resize: none;"></textarea>
+                            <div class="content_btn_list">
+                                <button class="pure-button pure-button-primary" id="content_list_show_btn">列表</button>
+                                <button class="pure-button pure-button-primary" id="content_list_add_btn">添加</button>
+                            </div>
                         </fieldset>
                         <fieldset >
                             <legend style="font-size: 80%">@列表</legend>
@@ -50,13 +61,31 @@
                  </div>
             </form>
         </div>
+        <div class="extra_content_list_box">
+            <div>
+                <div class="extra_content_box_title">
+                   发送内容列表
+                </div>
+                <div class="extra_content_box">
+                    <select size="10" id="extra_content_list">
+
+                    </select>
+                </div>
+                <div style="padding: 9px; background-color:grey">
+                    <button class="pure-button pure-button-primary" id="content_list_delete_btn">删除</button>
+                    <button class="pure-button" id="content_list_close_btn">关闭</button>
+                </div>
+            </div>
+        </div>
         <div id="fans_list"></div>
-        <div class="delete_box"><div>请把要删除的人拖到这里</div>
-                                   <div id="delete_box"></div></div>
+        <div class="delete_box">
+            <div>请把要删除的人拖到这里</div>
+            <div id="delete_box"></div>
+        </div>
         <script src="js/min/underscore-1.4.4.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="js/min/jquery-2.0.2.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="js/min/jquery-ui-1.10.3.custom.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="http://tjs.sjs.sinajs.cn/open/api/js/wb.js?appkey=2635336789" type="text/javascript" charset="utf-8"></script>
+        <script src="http://tjs.sjs.sinajs.cn/open/api/js/wb.js?appkey=3767757844" type="text/javascript" charset="utf-8"></script>
         <script src="js/min/index.min.js" type="text/javascript" charset="utf-8"></script>
     </body>
 </html>
